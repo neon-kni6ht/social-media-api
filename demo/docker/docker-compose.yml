@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  db:
+    image: social_media_db
+    ports:
+      - "8084:5432"
+
+  #modify-service:
+  #  image: demo_ex_image
+  #  environment:
+  #    SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/sk_example_db
+  #  ports:
+  #    - 8083:8083
+  #  depends_on:
+  #    - db
