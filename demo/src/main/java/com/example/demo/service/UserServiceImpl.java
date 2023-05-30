@@ -6,6 +6,8 @@ import com.example.demo.data.Post;
 import com.example.demo.data.User;
 import com.example.demo.exception.AlreadyRegisteredException;
 import com.example.demo.exception.InvalidCredentialsException;
+import com.example.demo.exception.NotFriendsException;
+import com.example.demo.exception.NotSubscribedException;
 import com.example.demo.repository.MessageRepository;
 import com.example.demo.repository.PostRepository;
 import com.example.demo.repository.UserRepository;
@@ -144,11 +146,11 @@ public class UserServiceImpl implements UserService{
     }
 
     @Override
-    public Message denyFriendRequest(String usernameToAdd, String usernameToAsk) throws InvalidCredentialsException, UsernameNotFoundException{
+    public Message denyFriendRequest(String usernameToAdd, String usernameToAsk) throws InvalidCredentialsException, UsernameNotFoundException, NotFriendsException{
         User userToAdd = getByUsername(usernameToAdd);
         User userToAsk = getByUsername(usernameToAsk);
 
-        if (!userToAdd.getPendingRequests().contains(userToAsk)) throw new InvalidCredentialsException ("No friend request to " + usernameToAsk + " was found");
+        if (!userToAsk.getIncomingFriendRequests().contains(userToAdd)) throw new InvalidCredentialsException ("No friend request from " + usernameToAdd + " was found");
 
         Message message = new Message(userToAsk,userToAdd, LocalDateTime.now(),null, MessageType.FRIEND_DENY);
 
@@ -165,11 +167,11 @@ public class UserServiceImpl implements UserService{
 
     @Override
     @Transactional
-    public Message unfriend(String usernameToRemove, String usernameToRemoveFrom) throws UsernameNotFoundException, InvalidCredentialsException{
+    public Message unfriend(String usernameToRemove, String usernameToRemoveFrom) throws UsernameNotFoundException, InvalidCredentialsException, NotFriendsException{
         User userToRemove = getByUsername(usernameToRemove);
         User userToAsk = getByUsername(usernameToRemoveFrom);
 
-        if (!userToRemove.getFriendsWith().contains(userToAsk)) throw new UsernameNotFoundException ("Not friends with " + usernameToRemoveFrom);
+        if (!userToRemove.getFriendsWith().contains(userToAsk)) throw new NotFriendsException("Not friends with " + usernameToRemoveFrom);
 
         Message message = new Message(userToAsk,userToRemove, LocalDateTime.now(),null, MessageType.FRIEND_REMOVE);
 
@@ -189,12 +191,12 @@ public class UserServiceImpl implements UserService{
 
     @Override
     @Transactional
-    public Message acceptFriendRequest(String usernameToAdd, String usernameToAsk) throws UsernameNotFoundException, InvalidCredentialsException {
+    public Message acceptFriendRequest(String usernameToAdd, String usernameToAsk) throws UsernameNotFoundException, InvalidCredentialsException, NotFriendsException {
 
         User userToAdd = getByUsername(usernameToAdd);
         User userToAsk = getByUsername(usernameToAsk);
 
-        if (!userToAdd.getPendingRequests().contains(userToAsk)) throw new UsernameNotFoundException ("No friend request to " + usernameToAsk + " was found");
+        if (!userToAsk.getIncomingFriendRequests().contains(userToAdd)) throw new InvalidCredentialsException ("No friend request from " + usernameToAdd + " was found");
 
         Message message = new Message(userToAsk,userToAdd, LocalDateTime.now(),null, MessageType.FRIEND_APPROVE);
 
@@ -250,9 +252,19 @@ public class UserServiceImpl implements UserService{
     }
 
     @Override
-    public Page<Post> getPosts(String username, Pageable pageable) throws InvalidCredentialsException, UsernameNotFoundException{
-        User user = getByUsername(username);
-        return postRepository.findAllByAuthorOrderByDateDesc(user, pageable);
+    public Page<Post> getPosts(String forUsername,String fromUsername, Pageable pageable) throws InvalidCredentialsException, UsernameNotFoundException, NotSubscribedException{
+
+        User forUser = getByUsername(forUsername);
+
+        if(fromUsername==null || fromUsername.equals(""))
+            return postRepository.findAllByAuthorOrderByDateDesc(forUser, pageable);
+
+        User fromUser = getByUsername(fromUsername);
+
+        if (!forUser.getSubscribedTo().contains(fromUser))
+            throw new NotSubscribedException("User " + fromUser +" is not in subscriptions");
+
+        return postRepository.findAllByAuthorOrderByDateDesc(fromUser, pageable);
     }
 
     @Override

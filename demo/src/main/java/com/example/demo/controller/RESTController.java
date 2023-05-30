@@ -55,7 +55,21 @@ public class RESTController {
         }
     }
 
-    @PostMapping("/friend")
+    @DeleteMapping("/subscribe")
+    public ResponseEntity<String> unsubscribeFrom(Principal principal, @RequestParam String unsubscribeFrom){
+
+        try {
+            String username = getUsernameFromToken(principal);
+            userService.unsubscribeFrom(username,unsubscribeFrom);
+            return new ResponseEntity<>(HttpStatus.OK);
+        }
+        catch (Throwable e){
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+    }
+
+
+    @PostMapping("/friend_request")
     public ResponseEntity<String> sendFriendRequest(Principal principal, @RequestParam String sendTo){
 
         try {
@@ -120,7 +134,7 @@ public class RESTController {
         }
     }
 
-    @GetMapping("/user")
+    @GetMapping("/post")
     public ResponseEntity<String> getPosts(Principal principal,
                                            @RequestParam(required = false) String user,
                                            @RequestParam(defaultValue = "0") int page,
@@ -129,18 +143,14 @@ public class RESTController {
 
         try {
 
-            String username;
-            if (user==null || user.equals(""))
-                username = getUsernameFromToken(principal);
-            else
-                username = user;
+            String username = getUsernameFromToken(principal);
 
             List<Order> orders = new ArrayList<>();
             orders.add(new Order(getSortDirection(sort), "date"));
 
 
             Pageable pagingSort = PageRequest.of(page, size, Sort.by(orders));
-            Page<Post> posts = userService.getPosts(username, pagingSort);
+            Page<Post> posts = userService.getPosts(username, user, pagingSort);
 
             Map<String, Object> response = new HashMap<>();
             response.put("posts", posts.getContent());
@@ -157,7 +167,7 @@ public class RESTController {
 
 
 
-    @PutMapping("/user")
+    @PostMapping("/post")
     public ResponseEntity<String> addPost(@RequestBody PostDTO post, Principal principal){
         try {
             String username = getUsernameFromToken(principal);
@@ -169,7 +179,7 @@ public class RESTController {
         }
     }
 
-    @DeleteMapping("/user")
+    @DeleteMapping("/post")
     public ResponseEntity<String> removePost(@RequestParam int id){
 
         try {
@@ -181,7 +191,7 @@ public class RESTController {
         }
     }
 
-    @GetMapping("/chat")
+    @GetMapping("/user")
     public ResponseEntity<String> getMessageHistory(Principal principal,
                                                     @RequestParam String with,
                                                     @RequestParam(defaultValue = "0") int page,
@@ -226,7 +236,7 @@ public class RESTController {
             Page<Post> feed = userService.getFeed(username, pagingSort);
 
             Map<String, Object> response = new HashMap<>();
-            response.put("feed", feed.getContent());
+            response.put("posts", feed.getContent());
             response.put("currentPage", feed.getNumber());
             response.put("totalItems", feed.getTotalElements());
             response.put("totalPages", feed.getTotalPages());

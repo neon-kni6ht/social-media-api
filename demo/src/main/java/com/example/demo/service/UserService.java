@@ -3,9 +3,7 @@ package com.example.demo.service;
 import com.example.demo.data.Message;
 import com.example.demo.data.Post;
 import com.example.demo.data.User;
-import com.example.demo.exception.AlreadyRegisteredException;
-import com.example.demo.exception.InvalidCredentialsException;
-import com.example.demo.exception.RegistrationException;
+import com.example.demo.exception.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -32,15 +30,15 @@ public interface UserService extends UserDetailsService {
 
     Message sendFriendRequest(String usernameToAdd, String usernameToAsk) throws InvalidCredentialsException, UsernameNotFoundException;
 
-    Message denyFriendRequest(String usernameToAdd, String usernameToAsk) throws InvalidCredentialsException, UsernameNotFoundException;
+    Message denyFriendRequest(String usernameToAdd, String usernameToAsk) throws InvalidCredentialsException, UsernameNotFoundException, NotFriendsException;
 
-    Message acceptFriendRequest(String usernameToAdd, String usernameToAsk) throws InvalidCredentialsException, UsernameNotFoundException;
+    Message acceptFriendRequest(String usernameToAdd, String usernameToAsk) throws InvalidCredentialsException, UsernameNotFoundException, NotFriendsException;
 
     Message unfriend(String usernameToRemove, String usernameToRemoveFrom) throws InvalidCredentialsException, UsernameNotFoundException;
 
     Message sendMessage(String usernameFrom, String usernameTo, String content) throws InvalidCredentialsException, UsernameNotFoundException;
 
-    Page<Post> getPosts(String username, Pageable pageable) throws InvalidCredentialsException, UsernameNotFoundException;
+    Page<Post> getPosts(String forUsername,String fromUsername, Pageable pageable) throws InvalidCredentialsException, UsernameNotFoundException, NotSubscribedException;
 
     int addPost(String username, String header, String content) throws InvalidCredentialsException, UsernameNotFoundException;
 
