@@ -6,11 +6,11 @@ services:
     ports:
       - "8084:5432"
 
-  #modify-service:
-  #  image: demo_ex_image
-  #  environment:
-  #    SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/sk_example_db
-  #  ports:
-  #    - 8083:8083
-  #  depends_on:
-  #    - db
+  social-media-service:
+    image: demo_sm_api_image
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/social_media_api_db
+    ports:
+      - 8083:8083
+    depends_on:
+      - db
