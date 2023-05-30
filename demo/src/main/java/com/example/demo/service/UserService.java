@@ -9,6 +9,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
+import java.util.InvalidPropertiesFormatException;
 import java.util.List;
 import java.util.Set;
 
@@ -40,7 +41,7 @@ public interface UserService extends UserDetailsService {
 
     Page<Post> getPosts(String forUsername,String fromUsername, Pageable pageable) throws InvalidCredentialsException, UsernameNotFoundException, NotSubscribedException;
 
-    int addPost(String username, String header, String content) throws InvalidCredentialsException, UsernameNotFoundException;
+    int addPost(String username, String header, String content) throws InvalidCredentialsException, UsernameNotFoundException, IllegalArgumentException;
 
     void removePost(int id);
 

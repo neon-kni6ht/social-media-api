@@ -256,14 +256,12 @@ paths:
       summary: Отправить сообщение
       description: Отправить сообщение пользователю
       operationId: sendMessage
-      parameters:
-        - name: to
-          in: query
-          description: Имя пользователя-адресата
-          required: true
-          schema:
-            type: string
-          example: "John"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MessageDTO'
+        required: true
       responses:
         '200':
           description: Сообщение успешно отправлено
@@ -519,6 +517,14 @@ components:
         type:
           type: string
           enum: [MESSAGE,FRIEND_REQUEST,FRIEND_APPROVE,FRIEND_DENY,FRIEND_REMOVE]
+    MessageDTO:
+      type: object
+      properties:
+        to:
+          type: string
+        content:
+          type: string
+          example: shocking private content
     MessagePage:
       type: object
       properties:

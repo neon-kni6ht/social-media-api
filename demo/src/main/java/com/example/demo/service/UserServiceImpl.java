@@ -97,7 +97,7 @@ public class UserServiceImpl implements UserService{
     @Override
     public void subscribeTo(String username, String subscribeToUsername) throws InvalidCredentialsException, UsernameNotFoundException{
 
-        if (username.equals(subscribeToUsername)) throw new InvalidCredentialsException("Can not subscribe to self");
+        if (username.equals(subscribeToUsername)) throw new NotSubscribedException("Can not subscribe to self");
 
         User subscriber = getByUsername(username);
         User owner = getByUsername(subscribeToUsername);
@@ -110,7 +110,7 @@ public class UserServiceImpl implements UserService{
     }
 
     @Override
-    public void unsubscribeFrom(String username, String unsubscribeFromUsername) throws InvalidCredentialsException, UsernameNotFoundException{
+    public void unsubscribeFrom(String username, String unsubscribeFromUsername) throws InvalidCredentialsException, UsernameNotFoundException, NotSubscribedException{
 
         User subscriber = getByUsername(username);
         User owner = getByUsername(unsubscribeFromUsername);
@@ -124,9 +124,9 @@ public class UserServiceImpl implements UserService{
 
     @Override
     @Transactional
-    public Message sendFriendRequest(String usernameToAdd, String usernameToAsk) throws InvalidCredentialsException, UsernameNotFoundException{
+    public Message sendFriendRequest(String usernameToAdd, String usernameToAsk) throws InvalidCredentialsException, UsernameNotFoundException, NotFriendsException{
 
-        if (usernameToAdd.equals(usernameToAsk)) throw new InvalidCredentialsException("Can not send friend request to self");
+        if (usernameToAdd.equals(usernameToAsk)) throw new NotFriendsException("Can not send friend request to self");
 
         User userToAdd = getByUsername(usernameToAdd);
         User userToAsk = getByUsername(usernameToAsk);
@@ -146,11 +146,37 @@ public class UserServiceImpl implements UserService{
     }
 
     @Override
+    @Transactional
+    public Message acceptFriendRequest(String usernameToAdd, String usernameToAsk) throws UsernameNotFoundException, InvalidCredentialsException, NotFriendsException {
+
+        User userToAdd = getByUsername(usernameToAdd);
+        User userToAsk = getByUsername(usernameToAsk);
+
+        if (!userToAsk.getIncomingFriendRequests().contains(userToAdd)) throw new NotFriendsException ("No friend request from " + usernameToAdd + " was found");
+
+        Message message = new Message(userToAsk,userToAdd, LocalDateTime.now(),null, MessageType.FRIEND_APPROVE);
+
+        userToAsk.getMessages().add(message);
+
+        userToAdd.getPendingRequests().remove(userToAsk);
+        userToAsk.getIncomingFriendRequests().remove(userToAdd);
+        userToAdd.getFriendTo().add(userToAsk);
+        userToAdd.getFriendsWith().add(userToAsk);
+        userToAsk.getFriendTo().add(userToAdd);
+        userToAsk.getFriendsWith().add(userToAdd);
+        userRepository.save(userToAsk);
+
+        subscribeTo(usernameToAsk,usernameToAdd);
+
+        return messageRepository.findFirstByFromAndToAndTypeOrderByDateTimeDesc(userToAsk,userToAdd,MessageType.FRIEND_APPROVE);
+    }
+
+    @Override
     public Message denyFriendRequest(String usernameToAdd, String usernameToAsk) throws InvalidCredentialsException, UsernameNotFoundException, NotFriendsException{
         User userToAdd = getByUsername(usernameToAdd);
         User userToAsk = getByUsername(usernameToAsk);
 
-        if (!userToAsk.getIncomingFriendRequests().contains(userToAdd)) throw new InvalidCredentialsException ("No friend request from " + usernameToAdd + " was found");
+        if (!userToAsk.getIncomingFriendRequests().contains(userToAdd)) throw new NotFriendsException ("No friend request from " + usernameToAdd + " was found");
 
         Message message = new Message(userToAsk,userToAdd, LocalDateTime.now(),null, MessageType.FRIEND_DENY);
 
@@ -189,32 +215,6 @@ public class UserServiceImpl implements UserService{
         return messageRepository.findFirstByFromAndToAndTypeOrderByDateTimeDesc(userToAsk,userToRemove,MessageType.FRIEND_REMOVE);
     }
 
-    @Override
-    @Transactional
-    public Message acceptFriendRequest(String usernameToAdd, String usernameToAsk) throws UsernameNotFoundException, InvalidCredentialsException, NotFriendsException {
-
-        User userToAdd = getByUsername(usernameToAdd);
-        User userToAsk = getByUsername(usernameToAsk);
-
-        if (!userToAsk.getIncomingFriendRequests().contains(userToAdd)) throw new InvalidCredentialsException ("No friend request from " + usernameToAdd + " was found");
-
-        Message message = new Message(userToAsk,userToAdd, LocalDateTime.now(),null, MessageType.FRIEND_APPROVE);
-
-        userToAsk.getMessages().add(message);
-
-        userToAdd.getPendingRequests().remove(userToAsk);
-        userToAsk.getIncomingFriendRequests().remove(userToAdd);
-        userToAdd.getFriendTo().add(userToAsk);
-        userToAdd.getFriendsWith().add(userToAsk);
-        userToAsk.getFriendTo().add(userToAdd);
-        userToAsk.getFriendsWith().add(userToAdd);
-        userRepository.save(userToAsk);
-
-        subscribeTo(usernameToAsk,usernameToAdd);
-
-        return messageRepository.findFirstByFromAndToAndTypeOrderByDateTimeDesc(userToAsk,userToAdd,MessageType.FRIEND_APPROVE);
-    }
-
 
     @Override
     public Message sendMessage(String usernameFrom, String usernameTo, String content) throws UsernameNotFoundException, InvalidCredentialsException{
@@ -236,8 +236,10 @@ public class UserServiceImpl implements UserService{
     }
 
     @Override
-    public int addPost(String username, String header, String content) throws InvalidCredentialsException, UsernameNotFoundException {
+    public int addPost(String username, String header, String content) throws InvalidCredentialsException, UsernameNotFoundException, IllegalArgumentException {
         User user = getByUsername(username);
+        if (header==null || header.equals("") || content==null || content.equals(""))
+            throw new IllegalArgumentException("Invalid post data provided");
         Post post = new Post(LocalDateTime.now(),header,content,user);
         user.getPosts().add(post);
 

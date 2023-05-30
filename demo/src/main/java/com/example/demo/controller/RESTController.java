@@ -2,6 +2,7 @@ package com.example.demo.controller;
 
 import com.example.demo.data.Message;
 import com.example.demo.data.Post;
+import com.example.demo.dto.MessageDTO;
 import com.example.demo.dto.PostDTO;
 import com.example.demo.dto.UserDTO;
 import com.example.demo.exception.RegistrationException;
@@ -122,11 +123,10 @@ public class RESTController {
     }
 
     @PostMapping("/user")
-    public ResponseEntity<String> sendMessage(Principal principal, @RequestParam String to){
-
+    public ResponseEntity<String> sendMessage(Principal principal, @RequestBody MessageDTO messageDTO){
         try {
             String username = getUsernameFromToken(principal);
-            Message message = userService.sendMessage(username,to,"test content");
+            Message message = userService.sendMessage(username,messageDTO.to,messageDTO.content);
             return new ResponseEntity<>(message.toString(),HttpStatus.OK);
         }
         catch (Throwable e){
@@ -242,21 +242,6 @@ public class RESTController {
             response.put("totalPages", feed.getTotalPages());
 
             return new ResponseEntity<>(response.toString(),HttpStatus.OK);
-        }
-        catch (Throwable e){
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
-        }
-    }
-
-    @GetMapping("/test")
-    public ResponseEntity<String> test(){
-
-        try {
-            userService.register("test", "test", "test");
-            userService.register("test1", "test1", "test1");
-            Message message = userService.sendMessage("test","test1","test content");
-
-            return new ResponseEntity<>(message.toString(),HttpStatus.OK);
         }
         catch (Throwable e){
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
